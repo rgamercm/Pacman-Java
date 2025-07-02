@@ -245,7 +245,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         add(menuButton);
         
         // Botón de Continuar
-        resumeButton = new JButton("CONTINUAR (P)");
+        resumeButton = new JButton("CONTINUAR");
         resumeButton.setBounds(boardWidth/2 - 150, boardHeight/2 - 60, 300, 50);
         resumeButton.addActionListener(e -> togglePause());
         resumeButton.setBackground(buttonColor);
@@ -285,6 +285,17 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         menuButton.setVisible(show);
         resumeButton.setVisible(show);
     }
+
+        private void showGameoverButtons(boolean show) {
+        startButton.setVisible(false);
+        exitButton.setVisible(show);
+        restartButton.setVisible(show);
+        menuButton.setVisible(show);
+        resumeButton.setVisible(!show);
+    }
+
+    //HAY QUE COLORCAR EL SHOWGAMEOVERBUTTONS
+    //DEBE APARECER SOLO REINICIAR, SALIR, MENU, NO DEBE IR CONTINUAR
 
     public void loadMap() {
         walls = new HashSet<>();
@@ -359,7 +370,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         // Dibujar título
         g.setColor(Color.YELLOW);
         g.setFont(customFontLarge);
-        String title = "PAC-MAN ERIKA";
+        String title = "PAC-MAN ERIKIKI";
         int titleWidth = g.getFontMetrics().stringWidth(title);
         g.drawString(title, (boardWidth - titleWidth)/2, boardHeight/3 + 50);
     }
@@ -390,13 +401,13 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         }
 
         // Dibuja comida
-        g.setColor(Color.WHITE);
+        g.setColor(Color.orange);
         for (Block food : foods) {
             g.fillRect(food.x, food.y, food.width, food.height);
         }
 
         // Dibuja puntaje y vidas
-        g.setColor(Color.WHITE);
+        g.setColor(Color.GREEN);
         g.setFont(customFontSmall);
         String livesText = "x";
         g.drawString(livesText, tileSize/2, tileSize/2);
@@ -409,7 +420,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         // Dibuja mensaje de muerte
         if (gameState == GameState.PLAYER_DIED) {
             g.setColor(Color.RED);
-            g.setFont(customFontMedium);
+            g.setFont(arialBlackFont);
             String deathText = "PERDISTE UNA VIDA";
             textWidth = g.getFontMetrics().stringWidth(deathText);
             g.drawString(deathText, (boardWidth - textWidth)/2, boardHeight/2);
@@ -463,7 +474,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         g.setFont(arialBlackFont);
         g.drawString(scoreNumbers, startX + labelWidth, boardHeight/2 - 30);
         
-        showGameButtons(true);
+        showGameoverButtons(true);
     }
 
 private void startGame() {
@@ -593,7 +604,7 @@ private void startGame() {
     private void gameOver() {
         gameState = GameState.GAME_OVER;
         gameLoop.stop();
-        showGameButtons(true);
+        showGameoverButtons(true);
         repaint();
     }
 
@@ -698,6 +709,19 @@ private void startGame() {
             case KeyEvent.VK_RIGHT:
                 if (gameState == GameState.PLAYING) pacman.nextDirection = 'R';
                 break;
+            //O TAMBIEN CON AWSD EN EL TECLADO
+            case KeyEvent.VK_W:
+                if (gameState == GameState.PLAYING) pacman.nextDirection = 'U';
+                break;
+            case KeyEvent.VK_S:
+                if (gameState == GameState.PLAYING) pacman.nextDirection = 'D';
+                break;
+            case KeyEvent.VK_A:
+                if (gameState == GameState.PLAYING) pacman.nextDirection = 'L';
+                break;
+            case KeyEvent.VK_D:
+                if (gameState == GameState.PLAYING) pacman.nextDirection = 'R';
+                break;
             case KeyEvent.VK_ESCAPE:
                 if (gameState == GameState.PLAYING) {
                     togglePause();
@@ -719,7 +743,7 @@ private void startGame() {
     public void keyReleased(KeyEvent e) {}
 
     public static void main(String[] args) {
-        JFrame frame = new JFrame("Pac-Man Erika");
+        JFrame frame = new JFrame("PAC-MAN ERIKIKI");
         
         // Configurar propiedades de la ventana
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
