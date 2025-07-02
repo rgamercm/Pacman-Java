@@ -1,1 +1,1 @@
-boardWidth
+        String[] colors = {"", "", "", "", "", "", ""};

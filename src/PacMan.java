@@ -1,5 +1,4 @@
 import java.awt.*;
-import javax.imageio.ImageIO;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.InputStream;
@@ -7,18 +6,21 @@ import java.util.HashSet;
 import java.util.Random;
 import javax.swing.*;
 import javax.sound.sampled.*;
+import java.io.File;
+import javax.imageio.ImageIO;
 
 public class PacMan extends JPanel implements ActionListener, KeyListener {
     // Estados del juego
     enum GameState {
         MAIN_MENU,
+        COLOR_SELECTION,
         PLAYING,
         PAUSED,
         GAME_OVER,
         PLAYER_DIED
     }
     
-    private GameState gameState = GameState.MAIN_MENU; // Estado inicial ahora es MENU
+    private GameState gameState = GameState.MAIN_MENU;
     
     class Block {
         int x;
@@ -136,6 +138,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     
     // Botones del menú
     private JButton startButton;
+    private JButton colorSelectionButton;
     private JButton restartButton;
     private JButton menuButton;
     private JButton resumeButton;
@@ -143,8 +146,6 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     private JButton exiteButton;
     private JButton controlsButton;
     private JButton aboutButton;
-    private JButton controlsButtons;
-    private JButton aboutButtons;
 
     // Fuentes personalizadas
     private Font customFontLarge;
@@ -177,8 +178,8 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         
         arialBlackFont = new Font("Arial Black", Font.BOLD, 20);
 
-        // Carga de imágenes
-        loadImages();
+        // Carga de imágenes (cargamos el amarillo por defecto)
+        loadImages("amarillo");
         
         // Configuración de botones
         setupButtons();
@@ -196,59 +197,68 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
                 gameState = GameState.PLAYING;
                 showPacman = true;
                 gameLoop.start();
-                // Reiniciar sonido de movimiento al revivir
                 startMoveSound();
             }
             repaint();
         });
     }
 
-    private void loadImages() {
-        wallImage = new ImageIcon(getClass().getResource("./wall.png")).getImage();
-        blueGhostImage = new ImageIcon(getClass().getResource("./blueGhost.png")).getImage();
-        orangeGhostImage = new ImageIcon(getClass().getResource("./orangeGhost.png")).getImage();
-        pinkGhostImage = new ImageIcon(getClass().getResource("./pinkGhost.png")).getImage();
-        redGhostImage = new ImageIcon(getClass().getResource("./redGhost.png")).getImage();
-
-        pacmanUpImage = new ImageIcon(getClass().getResource("./pacmanUp.png")).getImage();
-        pacmanDownImage = new ImageIcon(getClass().getResource("./pacmanDown.png")).getImage();
-        pacmanLeftImage = new ImageIcon(getClass().getResource("./pacmanLeft.png")).getImage();
-        pacmanRightImage = new ImageIcon(getClass().getResource("./pacmanRight.png")).getImage();
-        
-        // Cargar imágenes para el menú
+    private void loadImages(String color) {
         try {
-            ImageIcon rawIcon = new ImageIcon(getClass().getResource("./menu_background.png"));
-            Image rawImage = rawIcon.getImage();
+            wallImage = ImageIO.read(getClass().getResource("./wall.png"));
+            blueGhostImage = ImageIO.read(getClass().getResource("./blueGhost.png"));
+            orangeGhostImage = ImageIO.read(getClass().getResource("./orangeGhost.png"));
+            pinkGhostImage = ImageIO.read(getClass().getResource("./pinkGhost.png"));
+            redGhostImage = ImageIO.read(getClass().getResource("./redGhost.png"));
 
-            // Crear una imagen escalada con mejor calidad
+            // Cargar imágenes de Pac-Man según el color seleccionado
+            pacmanUpImage = ImageIO.read(getClass().getResource("./pacman_" + color + "/pacmanUp.png"));
+            pacmanDownImage = ImageIO.read(getClass().getResource("./pacman_" + color + "/pacmanDown.png"));
+            pacmanLeftImage = ImageIO.read(getClass().getResource("./pacman_" + color + "/pacmanLeft.png"));
+            pacmanRightImage = ImageIO.read(getClass().getResource("./pacman_" + color + "/pacmanRight.png"));
+            
+            // Cargar imágenes para el menú
+            Image rawImage = ImageIO.read(getClass().getResource("./menu_background.png"));
             BufferedImage scaledImage = new BufferedImage(boardWidth, boardHeight, BufferedImage.TYPE_INT_ARGB);
             Graphics2D g2d = scaledImage.createGraphics();
             g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
             g2d.drawImage(rawImage, 0, 0, boardWidth, boardHeight, null);
             g2d.dispose();
-
             menuBackground = scaledImage;
-        } catch (Exception e) {
-            System.err.println("Error cargando imagen de fondo: " + e.getMessage());
-        }
 
-        logoImage = new ImageIcon(getClass().getResource("./logo.png")).getImage();
+            logoImage = ImageIO.read(getClass().getResource("./logo.png"));
+        } catch (Exception e) {
+            System.err.println("Error cargando imágenes: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     private void setupButtons() {
         Color buttonColor = new Color(255, 255, 0);
         Color borderColor = new Color(33, 33, 222);
 
-        // Botón de Iniciar Juego (para el menú principal)
+        // Botón de Iniciar Juego
         startButton = new JButton("INICIAR JUEGO");
         startButton.setBounds(boardWidth/2 - 150, boardHeight/2 + 30, 300, 50);
-        startButton.addActionListener(e -> startGame());
+        startButton.addActionListener(e -> showColorSelection());
         startButton.setBackground(buttonColor);
         startButton.setForeground(Color.BLACK);
         startButton.setFont(customFontMedium);
         startButton.setBorder(BorderFactory.createLineBorder(borderColor, 3));
         startButton.setFocusPainted(false);
         add(startButton);
+
+        // Botón de Selección de Color
+        colorSelectionButton = new JButton("SELECCION COLOR");
+        colorSelectionButton.setBounds(boardWidth/2 - 150, boardHeight/2 + 30, 300, 50);
+        colorSelectionButton.addActionListener(e -> showColorOptions());
+        colorSelectionButton.setBackground(buttonColor);
+        colorSelectionButton.setForeground(Color.BLACK);
+        colorSelectionButton.setFont(customFontMedium);
+        colorSelectionButton.setBorder(BorderFactory.createLineBorder(borderColor, 3));
+        colorSelectionButton.setFocusPainted(false);
+        colorSelectionButton.setVisible(false);
+        add(colorSelectionButton);
 
         // Botón de Reiniciar Nivel
         restartButton = new JButton("REINICIAR NIVEL");
@@ -294,7 +304,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         controlsButton.addActionListener(e -> showControls());
         add(controlsButton);
 
-        // Botón de ¿Cómo se hizo este juego?
+        // Botón de Info del Juego
         aboutButton = new JButton("INFO DEL JUEGO");
         aboutButton.setBounds(boardWidth/2 - 150, boardHeight/2 + 140, 300, 40);
         aboutButton.setBackground(buttonColor);
@@ -316,7 +326,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         exitButton.setFocusPainted(false);
         add(exitButton);
 
-        // Botón 2de Salir del Juego
+        // Botón alternativo de Salir del Juego
         exiteButton = new JButton("SALIR DEL JUEGO");
         exiteButton.setBounds(boardWidth/2 - 150, boardHeight/2 + 150, 300, 50);
         exiteButton.addActionListener(e -> exitGame());
@@ -326,13 +336,11 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         exiteButton.setBorder(BorderFactory.createLineBorder(borderColor, 3));
         exiteButton.setFocusPainted(false);
         add(exiteButton);
-
-        // Mostramos solo los botones necesarios según el estado
-        showMainMenuButtons(true);
     }
 
     private void showMainMenuButtons(boolean show) {
         startButton.setVisible(show);
+        colorSelectionButton.setVisible(false);
         restartButton.setVisible(!show);
         menuButton.setVisible(!show);
         resumeButton.setVisible(false);
@@ -342,207 +350,104 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         exiteButton.setVisible(!show);
     }
 
-    private void showGameButtons(boolean show) {
+    private void showColorSelection() {
         startButton.setVisible(false);
-        exiteButton.setVisible(show);
-        restartButton.setVisible(show);
-        menuButton.setVisible(show);
-        resumeButton.setVisible(show);
+        colorSelectionButton.setVisible(true);
+        gameState = GameState.COLOR_SELECTION;
+        repaint();
     }
 
-    private void showGameoverButtons(boolean show) {
-        startButton.setVisible(false);
-        exiteButton.setVisible(show);
-        restartButton.setVisible(show);
-        menuButton.setVisible(show);
-        resumeButton.setVisible(!show);
+private void showColorOptions() {
+    JFrame colorFrame = new JFrame("Selecciona el color de tu Pac-Man");
+    colorFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+    
+    // Configuración del tamaño y layout
+    colorFrame.setSize(650, 400); // Tamaño un poco más grande
+    colorFrame.setLayout(new GridLayout(2, 4, 15, 15));
+    
+    // Centrado preciso en la pantalla
+    Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+    int x = (screenSize.width - colorFrame.getWidth()) / 2;
+    int y = (screenSize.height - colorFrame.getHeight()) / 2;
+    colorFrame.setLocation(x, y);
+
+    String[] colors = {"amarillo", "azul", "negro", "celeste", "rojo", "rosa", "verde"};
+    Color[] colorValues = {Color.YELLOW, Color.BLUE, Color.BLACK, Color.CYAN, Color.RED, Color.PINK, Color.GREEN};
+
+    // Fuente mejorada para los botones
+    Font colorButtonFont = new Font("Arial", Font.BOLD, 14);
+
+    for (int i = 0; i < colors.length; i++) {
+        JButton colorButton = new JButton(colors[i].toUpperCase()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                // Fondo del botón
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setColor(getBackground());
+                g2.fillRect(0, 0, getWidth(), getHeight());
+                
+                // Fondo blanco para el texto
+                g2.setColor(Color.WHITE);
+                FontMetrics fm = g2.getFontMetrics();
+                String text = getText();
+                int textWidth = fm.stringWidth(text);
+                int textHeight = fm.getHeight();
+                int padding = 8;
+                
+                // Rectángulo blanco con bordes redondeados
+                int arc = 15; // Radio para bordes redondeados
+                g2.fillRoundRect((getWidth() - textWidth)/2 - padding, 
+                               (getHeight() - textHeight)/2 - padding/2,
+                               textWidth + padding*2, 
+                               textHeight + padding, 
+                               arc, arc);
+                
+                // Texto
+                g2.setColor(Color.BLACK);
+                g2.drawString(text, (getWidth() - textWidth)/2, 
+                            (getHeight() - fm.getHeight())/2 + fm.getAscent());
+                g2.dispose();
+            }
+        };
+        
+        colorButton.setBackground(colorValues[i]);
+        colorButton.setFont(colorButtonFont);
+        colorButton.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        colorButton.setFocusPainted(false);
+        colorButton.addActionListener(e -> {
+            loadImages(colors[getIndex(colorButton.getText().toLowerCase(), colors)]);
+            colorFrame.dispose();
+            startGameAfterColorSelection();
+        });
+        
+        colorFrame.add(colorButton);
     }
 
-    public void loadMap() {
-        walls = new HashSet<>();
-        foods = new HashSet<>();
-        ghosts = new HashSet<>();
+    // Hacer la ventana modal (bloquea la ventana principal)
+    colorFrame.setResizable(false);
+    colorFrame.setVisible(true);
+}
 
-        for (int r = 0; r < rowCount; r++) {
-            for (int c = 0; c < columnCount; c++) {
-                char tileMapChar = tileMap[r].charAt(c);
-                int x = c * tileSize;
-                int y = r * tileSize;
-
-                switch (tileMapChar) {
-                    case 'X':
-                        walls.add(new Block(wallImage, x, y, tileSize, tileSize));
-                        break;
-                    case 'b':
-                        ghosts.add(new Block(blueGhostImage, x, y, tileSize, tileSize));
-                        break;
-                    case 'o':
-                        ghosts.add(new Block(orangeGhostImage, x, y, tileSize, tileSize));
-                        break;
-                    case 'p':
-                        ghosts.add(new Block(pinkGhostImage, x, y, tileSize, tileSize));
-                        break;
-                    case 'r':
-                        ghosts.add(new Block(redGhostImage, x, y, tileSize, tileSize));
-                        break;
-                    case 'P':
-                        pacman = new Block(pacmanRightImage, x, y, tileSize, tileSize);
-                        break;
-                    case ' ':
-                        foods.add(new Block(null, x + 14, y + 14, 4, 4));
-                        break;
-                }
+    private int getIndex(String text, String[] array) {
+        for (int i = 0; i < array.length; i++) {
+            if (array[i].equals(text)) {
+                return i;
             }
         }
+        return 0;
     }
 
-    @Override
-    protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        
-        switch (gameState) {
-            case MAIN_MENU:
-                drawMainMenu(g);
-                break;
-            case PLAYING:
-            case PLAYER_DIED:
-                drawGame(g);
-                break;
-            case PAUSED:
-                drawGame(g);
-                drawPauseScreen(g);
-                break;
-            case GAME_OVER:
-                drawGame(g);
-                drawGameOver(g);
-                break;
-        }
-    }
-
-    private void drawMainMenu(Graphics g) {
-        // Dibujar fondo del menú
-        g.drawImage(menuBackground, 0, 0, boardWidth, boardHeight, this);
-        
-        // Dibujar logo
-        int logoWidth = logoImage.getWidth(null);
-        int logoHeight = logoImage.getHeight(null);
-        g.drawImage(logoImage, (boardWidth - logoWidth)/2, boardHeight/4 - logoHeight/2, null);
-        
-        // Dibujar título
-        g.setColor(Color.YELLOW);
-        g.setFont(customFontLarge);
-        String title = "PAC-MAN ERIKIKI";
-        int titleWidth = g.getFontMetrics().stringWidth(title);
-        g.drawString(title, (boardWidth - titleWidth)/2, boardHeight/3 + 50);
-    }
-
-    private void drawGame(Graphics g) {
-        // Dibujar fondo del juego
-        g.setColor(Color.BLACK);
-        g.fillRect(0, 0, boardWidth, boardHeight);
-        
-        // Dibuja Pac-Man (si no está en estado de muerte o si debe mostrarse)
-        if (showPacman && gameState != GameState.PLAYER_DIED) {
-            switch (pacman.direction) {
-                case 'U': g.drawImage(pacmanUpImage, pacman.x, pacman.y, pacman.width, pacman.height, null); break;
-                case 'D': g.drawImage(pacmanDownImage, pacman.x, pacman.y, pacman.width, pacman.height, null); break;
-                case 'L': g.drawImage(pacmanLeftImage, pacman.x, pacman.y, pacman.width, pacman.height, null); break;
-                case 'R': g.drawImage(pacmanRightImage, pacman.x, pacman.y, pacman.width, pacman.height, null); break;
-            }
-        }
-
-        // Dibuja fantasmas
-        for (Block ghost : ghosts) {
-            g.drawImage(ghost.image, ghost.x, ghost.y, ghost.width, ghost.height, null);
-        }
-
-        // Dibuja paredes
-        for (Block wall : walls) {
-            g.drawImage(wall.image, wall.x, wall.y, wall.width, wall.height, null);
-        }
-
-        // Dibuja comida
-        g.setColor(Color.orange);
-        for (Block food : foods) {
-            g.fillRect(food.x, food.y, food.width, food.height);
-        }
-
-        // Dibuja puntaje y vidas
-        g.setColor(Color.GREEN);
-        g.setFont(customFontSmall);
-        String livesText = "x";
-        g.drawString(livesText, tileSize/2, tileSize/2);
-        
-        g.setFont(arialBlackFont);
-        String numbers = lives + " SCORE: " + score;
-        int textWidth = g.getFontMetrics().stringWidth(numbers);
-        g.drawString(numbers, tileSize/2 + g.getFontMetrics(customFontSmall).stringWidth(livesText), tileSize/2);
-        
-        // Dibuja mensaje de muerte
-        if (gameState == GameState.PLAYER_DIED) {
-            g.setColor(Color.RED);
-            g.setFont(arialBlackFont);
-            String deathText = "PERDISTE UNA VIDA";
-            textWidth = g.getFontMetrics().stringWidth(deathText);
-            g.drawString(deathText, (boardWidth - textWidth)/2, boardHeight/2);
-        }
-    }
-
-    private void drawPauseScreen(Graphics g) {
-        g.setColor(new Color(0, 0, 0, 180));
-        g.fillRect(0, 0, boardWidth, boardHeight);
-        
-        g.setColor(Color.YELLOW);
-        g.setFont(customFontLarge);
-        String pauseText = "PAUSA";
-        int textWidth = g.getFontMetrics().stringWidth(pauseText);
-        g.drawString(pauseText, (boardWidth - textWidth)/2, boardHeight/2 - 120);
-        
-        g.setColor(Color.WHITE);
-        g.setFont(customFontMedium);
-        String instruction = "Presiona P para continuar";
-        textWidth = g.getFontMetrics().stringWidth(instruction);
-        g.drawString(instruction, (boardWidth - textWidth)/2, boardHeight/2 + 260);
-        
-        showGameButtons(true);
-    }
-
-    private void drawGameOver(Graphics g) {
-        g.setColor(new Color(0, 0, 0, 200));
-        g.fillRect(0, 0, boardWidth, boardHeight);
-        
-        g.setColor(Color.RED);
-        g.setFont(customFontLarge);
-        String gameOverText = "GAME OVER";
-        int textWidth = g.getFontMetrics().stringWidth(gameOverText);
-        g.drawString(gameOverText, (boardWidth - textWidth)/2, boardHeight/2 - 80);
-        
-        g.setColor(Color.YELLOW);
-        g.setFont(customFontMedium);
-        String scoreLabel = "PUNTUACION: ";
-        int labelWidth = g.getFontMetrics().stringWidth(scoreLabel);
-        
-        g.setFont(arialBlackFont);
-        String scoreNumbers = String.valueOf(score);
-        int numbersWidth = g.getFontMetrics().stringWidth(scoreNumbers);
-        
-        int totalWidth = labelWidth + numbersWidth;
-        int startX = (boardWidth - totalWidth)/2;
-        
-        g.setFont(customFontMedium);
-        g.drawString(scoreLabel, startX, boardHeight/2 - 30);
-        
-        g.setFont(arialBlackFont);
-        g.drawString(scoreNumbers, startX + labelWidth, boardHeight/2 - 30);
-        
-        showGameoverButtons(true);
+    private void startGameAfterColorSelection() {
+        colorSelectionButton.setVisible(false);
+        startGame();
     }
 
     private void startGame() {
         loadMap();
         resetPositions();
         gameState = GameState.PLAYING;
-        // Ocultamos todos los botones
+        
+        // Ocultar botones no necesarios
         startButton.setVisible(false);
         exitButton.setVisible(false);
         exiteButton.setVisible(false);
@@ -552,16 +457,14 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         controlsButton.setVisible(false); 
         aboutButton.setVisible(false);    
 
-        // Reiniciamos valores del juego
+        // Reiniciar valores del juego
         score = 0;
         lives = 3;
         showPacman = true;
         
-        // Iniciamos el juego
+        // Iniciar juego
         gameLoop.start();
         requestFocus();
-        
-        // Iniciar sonido de movimiento
         startMoveSound();
     }
 
@@ -569,7 +472,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         gameState = GameState.MAIN_MENU;
         gameLoop.stop();
         showMainMenuButtons(true);
-        stopAllSounds(); // Detener todos los sonidos al volver al menú
+        stopAllSounds();
         repaint();
     }
 
@@ -668,7 +571,6 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         gameState = GameState.PLAYER_DIED;
         gameLoop.stop();
         
-        // Detener sonido de movimiento y reproducir sonido de muerte
         stopAllSounds();
         playSound("./die.wav", false);
         
@@ -679,7 +581,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     private void gameOver() {
         gameState = GameState.GAME_OVER;
         gameLoop.stop();
-        stopAllSounds(); // Detener todos los sonidos al terminar el juego
+        stopAllSounds();
         showGameoverButtons(true);
         repaint();
     }
@@ -688,12 +590,12 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         if (gameState == GameState.PLAYING) {
             gameState = GameState.PAUSED;
             gameLoop.stop();
-            stopMoveSound(); // Detener sonido de movimiento al pausar
+            stopMoveSound();
             showGameButtons(true);
         } else if (gameState == GameState.PAUSED) {
             gameState = GameState.PLAYING;
             gameLoop.start();
-            startMoveSound(); // Reanudar sonido de movimiento al continuar
+            startMoveSound();
             showGameButtons(false);
             requestFocus();
         }
@@ -701,7 +603,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     }
 
     private void exitGame() {
-        stopAllSounds(); // Detener todos los sonidos al salir
+        stopAllSounds();
         Window window = SwingUtilities.getWindowAncestor(this);
         if (window != null) {
             window.dispose();
@@ -751,8 +653,6 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         showPacman = true;
         gameLoop.start();
         requestFocus();
-        
-        // Reiniciar sonido de movimiento
         startMoveSound();
     }
 
@@ -796,7 +696,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     private void startMoveSound() {
         if (gameState == GameState.PLAYING) {
             stopAllSounds();
-            moveSound.playSound("./move.wav", true); // Reproducir en bucle
+            moveSound.playSound("./move.wav", true);
             currentSound = moveSound;
         }
     }
@@ -823,6 +723,195 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         moveSound.stop();
         dieSound.stop();
         currentSound = null;
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        
+        switch (gameState) {
+            case MAIN_MENU:
+                drawMainMenu(g);
+                break;
+            case COLOR_SELECTION:
+                drawMainMenu(g);
+                break;
+            case PLAYING:
+            case PLAYER_DIED:
+                drawGame(g);
+                break;
+            case PAUSED:
+                drawGame(g);
+                drawPauseScreen(g);
+                break;
+            case GAME_OVER:
+                drawGame(g);
+                drawGameOver(g);
+                break;
+        }
+    }
+
+    private void drawMainMenu(Graphics g) {
+        g.drawImage(menuBackground, 0, 0, boardWidth, boardHeight, this);
+        
+        int logoWidth = logoImage.getWidth(null);
+        int logoHeight = logoImage.getHeight(null);
+        g.drawImage(logoImage, (boardWidth - logoWidth)/2, boardHeight/4 - logoHeight/2, null);
+        
+        g.setColor(Color.YELLOW);
+        g.setFont(customFontLarge);
+        String title = "PAC-MAN ERIKIKI";
+        int titleWidth = g.getFontMetrics().stringWidth(title);
+        g.drawString(title, (boardWidth - titleWidth)/2, boardHeight/3 + 50);
+    }
+
+    private void drawGame(Graphics g) {
+        g.setColor(Color.BLACK);
+        g.fillRect(0, 0, boardWidth, boardHeight);
+        
+        if (showPacman && gameState != GameState.PLAYER_DIED) {
+            switch (pacman.direction) {
+                case 'U': g.drawImage(pacmanUpImage, pacman.x, pacman.y, pacman.width, pacman.height, null); break;
+                case 'D': g.drawImage(pacmanDownImage, pacman.x, pacman.y, pacman.width, pacman.height, null); break;
+                case 'L': g.drawImage(pacmanLeftImage, pacman.x, pacman.y, pacman.width, pacman.height, null); break;
+                case 'R': g.drawImage(pacmanRightImage, pacman.x, pacman.y, pacman.width, pacman.height, null); break;
+            }
+        }
+
+        for (Block ghost : ghosts) {
+            g.drawImage(ghost.image, ghost.x, ghost.y, ghost.width, ghost.height, null);
+        }
+
+        for (Block wall : walls) {
+            g.drawImage(wall.image, wall.x, wall.y, wall.width, wall.height, null);
+        }
+
+        g.setColor(Color.orange);
+        for (Block food : foods) {
+            g.fillRect(food.x, food.y, food.width, food.height);
+        }
+
+        g.setColor(Color.GREEN);
+        g.setFont(customFontSmall);
+        String livesText = "x";
+        g.drawString(livesText, tileSize/2, tileSize/2);
+        
+        g.setFont(arialBlackFont);
+        String numbers = lives + " SCORE: " + score;
+        int textWidth = g.getFontMetrics().stringWidth(numbers);
+        g.drawString(numbers, tileSize/2 + g.getFontMetrics(customFontSmall).stringWidth(livesText), tileSize/2);
+        
+        if (gameState == GameState.PLAYER_DIED) {
+            g.setColor(Color.RED);
+            g.setFont(arialBlackFont);
+            String deathText = "PERDISTE UNA VIDA";
+            textWidth = g.getFontMetrics().stringWidth(deathText);
+            g.drawString(deathText, (boardWidth - textWidth)/2, boardHeight/2);
+        }
+    }
+
+    private void drawPauseScreen(Graphics g) {
+        g.setColor(new Color(0, 0, 0, 180));
+        g.fillRect(0, 0, boardWidth, boardHeight);
+        
+        g.setColor(Color.YELLOW);
+        g.setFont(customFontLarge);
+        String pauseText = "PAUSA";
+        int textWidth = g.getFontMetrics().stringWidth(pauseText);
+        g.drawString(pauseText, (boardWidth - textWidth)/2, boardHeight/2 - 120);
+        
+        g.setColor(Color.WHITE);
+        g.setFont(customFontMedium);
+        String instruction = "Presiona P para continuar";
+        textWidth = g.getFontMetrics().stringWidth(instruction);
+        g.drawString(instruction, (boardWidth - textWidth)/2, boardHeight/2 + 260);
+        
+        showGameButtons(true);
+    }
+
+    private void drawGameOver(Graphics g) {
+        g.setColor(new Color(0, 0, 0, 200));
+        g.fillRect(0, 0, boardWidth, boardHeight);
+        
+        g.setColor(Color.RED);
+        g.setFont(customFontLarge);
+        String gameOverText = "GAME OVER";
+        int textWidth = g.getFontMetrics().stringWidth(gameOverText);
+        g.drawString(gameOverText, (boardWidth - textWidth)/2, boardHeight/2 - 80);
+        
+        g.setColor(Color.YELLOW);
+        g.setFont(customFontMedium);
+        String scoreLabel = "PUNTUACION: ";
+        int labelWidth = g.getFontMetrics().stringWidth(scoreLabel);
+        
+        g.setFont(arialBlackFont);
+        String scoreNumbers = String.valueOf(score);
+        int numbersWidth = g.getFontMetrics().stringWidth(scoreNumbers);
+        
+        int totalWidth = labelWidth + numbersWidth;
+        int startX = (boardWidth - totalWidth)/2;
+        
+        g.setFont(customFontMedium);
+        g.drawString(scoreLabel, startX, boardHeight/2 - 30);
+        
+        g.setFont(arialBlackFont);
+        g.drawString(scoreNumbers, startX + labelWidth, boardHeight/2 - 30);
+        
+        showGameoverButtons(true);
+    }
+
+    private void showGameButtons(boolean show) {
+        startButton.setVisible(false);
+        exiteButton.setVisible(show);
+        restartButton.setVisible(show);
+        menuButton.setVisible(show);
+        resumeButton.setVisible(show);
+    }
+
+    private void showGameoverButtons(boolean show) {
+        startButton.setVisible(false);
+        exiteButton.setVisible(show);
+        restartButton.setVisible(show);
+        menuButton.setVisible(show);
+        resumeButton.setVisible(!show);
+    }
+
+    public void loadMap() {
+        walls = new HashSet<>();
+        foods = new HashSet<>();
+        ghosts = new HashSet<>();
+
+        for (int r = 0; r < rowCount; r++) {
+            for (int c = 0; c < columnCount; c++) {
+                char tileMapChar = tileMap[r].charAt(c);
+                int x = c * tileSize;
+                int y = r * tileSize;
+
+                switch (tileMapChar) {
+                    case 'X':
+                        walls.add(new Block(wallImage, x, y, tileSize, tileSize));
+                        break;
+                    case 'b':
+                        ghosts.add(new Block(blueGhostImage, x, y, tileSize, tileSize));
+                        break;
+                    case 'o':
+                        ghosts.add(new Block(orangeGhostImage, x, y, tileSize, tileSize));
+                        break;
+                    case 'p':
+                        ghosts.add(new Block(pinkGhostImage, x, y, tileSize, tileSize));
+                        break;
+                    case 'r':
+                        ghosts.add(new Block(redGhostImage, x, y, tileSize, tileSize));
+                        break;
+                    case 'P':
+                        pacman = new Block(pacmanRightImage, x, y, tileSize, tileSize);
+                        break;
+                    case ' ':
+                        foods.add(new Block(null, x + 14, y + 14, 4, 4));
+                        break;
+                }
+            }
+        }
     }
 
     @Override
@@ -860,7 +949,6 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             case KeyEvent.VK_RIGHT:
                 if (gameState == GameState.PLAYING) pacman.nextDirection = 'R';
                 break;
-            //O TAMBIEN CON AWSD EN EL TECLADO
             case KeyEvent.VK_W:
                 if (gameState == GameState.PLAYING) pacman.nextDirection = 'U';
                 break;
@@ -895,24 +983,15 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
 
     public static void main(String[] args) {
         JFrame frame = new JFrame("PAC-MAN ERIKIKI");
-        
-        // Configurar propiedades de la ventana
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setResizable(false);
         frame.setUndecorated(false);
         
-        // Configurar el contenido del juego
         PacMan game = new PacMan();
         frame.add(game);
         frame.pack();
-        
-        // Centrar la ventana
         frame.setLocationRelativeTo(null);
-        
-        // Hacer visible la ventana
         frame.setVisible(true);
-        
-        // Enfocar el juego para que reciba eventos de teclado
         game.requestFocus();
         frame.setIconImage(new ImageIcon(PacMan.class.getResource("icon.png")).getImage());
     }
@@ -927,9 +1006,16 @@ class SoundManager {
         isLooping = loop;
         
         try {
-            AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(getClass().getResource(path));
-            clip = AudioSystem.getClip();
-            clip.open(audioInputStream);
+            InputStream audioSrc = getClass().getResourceAsStream(path);
+            if (audioSrc == null) {
+                AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(new File(path));
+                clip = AudioSystem.getClip();
+                clip.open(audioInputStream);
+            } else {
+                AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(audioSrc);
+                clip = AudioSystem.getClip();
+                clip.open(audioInputStream);
+            }
             
             if (loop) {
                 clip.loop(Clip.LOOP_CONTINUOUSLY);
@@ -942,7 +1028,7 @@ class SoundManager {
     }
 
     public void stop() {
-        if (clip != null && clip.isRunning()) {
+        if (clip != null) {
             clip.stop();
             clip.close();
         }
