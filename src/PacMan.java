@@ -1,9 +1,12 @@
 import java.awt.*;
+import javax.imageio.ImageIO;
 import java.awt.event.*;
+import java.awt.image.BufferedImage;
 import java.io.InputStream;
 import java.util.HashSet;
 import java.util.Random;
 import javax.swing.*;
+import javax.sound.sampled.*;
 
 public class PacMan extends JPanel implements ActionListener, KeyListener {
     // Estados del juego
@@ -90,6 +93,10 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     private Image menuBackground;
     private Image logoImage;
 
+    private SoundManager moveSound = new SoundManager();
+    private SoundManager dieSound = new SoundManager();
+    private SoundManager currentSound = null;
+
     private String[] tileMap = {
         "XXXXXXXXXXXXXXXXXXX",
         "X        X        X",
@@ -139,8 +146,6 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     private JButton controlsButtons;
     private JButton aboutButtons;
 
-
-    
     // Fuentes personalizadas
     private Font customFontLarge;
     private Font customFontMedium;
@@ -191,6 +196,8 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
                 gameState = GameState.PLAYING;
                 showPacman = true;
                 gameLoop.start();
+                // Reiniciar sonido de movimiento al revivir
+                startMoveSound();
             }
             repaint();
         });
@@ -209,107 +216,120 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         pacmanRightImage = new ImageIcon(getClass().getResource("./pacmanRight.png")).getImage();
         
         // Cargar imágenes para el menú
-        menuBackground = new ImageIcon(getClass().getResource("./menu_background.png")).getImage()
-            .getScaledInstance(boardWidth, boardHeight, Image.SCALE_SMOOTH);
+        try {
+            ImageIcon rawIcon = new ImageIcon(getClass().getResource("./menu_background.png"));
+            Image rawImage = rawIcon.getImage();
+
+            // Crear una imagen escalada con mejor calidad
+            BufferedImage scaledImage = new BufferedImage(boardWidth, boardHeight, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g2d = scaledImage.createGraphics();
+            g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+            g2d.drawImage(rawImage, 0, 0, boardWidth, boardHeight, null);
+            g2d.dispose();
+
+            menuBackground = scaledImage;
+        } catch (Exception e) {
+            System.err.println("Error cargando imagen de fondo: " + e.getMessage());
+        }
+
         logoImage = new ImageIcon(getClass().getResource("./logo.png")).getImage();
     }
 
     private void setupButtons() {
-    Color buttonColor = new Color(255, 255, 0);
-    Color borderColor = new Color(33, 33, 222);
+        Color buttonColor = new Color(255, 255, 0);
+        Color borderColor = new Color(33, 33, 222);
 
-    // Botón de Iniciar Juego (para el menú principal)
-    startButton = new JButton("INICIAR JUEGO");
-    startButton.setBounds(boardWidth/2 - 150, boardHeight/2 + 30, 300, 50);
-    startButton.addActionListener(e -> startGame());
-    startButton.setBackground(buttonColor);
-    startButton.setForeground(Color.BLACK);
-    startButton.setFont(customFontMedium);
-    startButton.setBorder(BorderFactory.createLineBorder(borderColor, 3));
-    startButton.setFocusPainted(false);
-    add(startButton);
+        // Botón de Iniciar Juego (para el menú principal)
+        startButton = new JButton("INICIAR JUEGO");
+        startButton.setBounds(boardWidth/2 - 150, boardHeight/2 + 30, 300, 50);
+        startButton.addActionListener(e -> startGame());
+        startButton.setBackground(buttonColor);
+        startButton.setForeground(Color.BLACK);
+        startButton.setFont(customFontMedium);
+        startButton.setBorder(BorderFactory.createLineBorder(borderColor, 3));
+        startButton.setFocusPainted(false);
+        add(startButton);
 
-    // Botón de Reiniciar Nivel
-    restartButton = new JButton("REINICIAR NIVEL");
-    restartButton.setBounds(boardWidth/2 - 150, boardHeight/2 + 10, 300, 50);
-    restartButton.addActionListener(e -> restartLevel());
-    restartButton.setBackground(buttonColor);
-    restartButton.setForeground(Color.BLACK);
-    restartButton.setFont(customFontMedium);
-    restartButton.setBorder(BorderFactory.createLineBorder(borderColor, 3));
-    restartButton.setFocusPainted(false);
-    add(restartButton);
+        // Botón de Reiniciar Nivel
+        restartButton = new JButton("REINICIAR NIVEL");
+        restartButton.setBounds(boardWidth/2 - 150, boardHeight/2 + 10, 300, 50);
+        restartButton.addActionListener(e -> restartLevel());
+        restartButton.setBackground(buttonColor);
+        restartButton.setForeground(Color.BLACK);
+        restartButton.setFont(customFontMedium);
+        restartButton.setBorder(BorderFactory.createLineBorder(borderColor, 3));
+        restartButton.setFocusPainted(false);
+        add(restartButton);
 
-    // Botón de Menú Principal
-    menuButton = new JButton("MENU PRINCIPAL");
-    menuButton.setBounds(boardWidth/2 - 150, boardHeight/2 + 80, 300, 50);
-    menuButton.addActionListener(e -> showMainMenu());
-    menuButton.setBackground(buttonColor);
-    menuButton.setForeground(Color.BLACK);
-    menuButton.setFont(customFontMedium);
-    menuButton.setBorder(BorderFactory.createLineBorder(borderColor, 3));
-    menuButton.setFocusPainted(false);
-    add(menuButton);
+        // Botón de Menú Principal
+        menuButton = new JButton("MENU PRINCIPAL");
+        menuButton.setBounds(boardWidth/2 - 150, boardHeight/2 + 80, 300, 50);
+        menuButton.addActionListener(e -> showMainMenu());
+        menuButton.setBackground(buttonColor);
+        menuButton.setForeground(Color.BLACK);
+        menuButton.setFont(customFontMedium);
+        menuButton.setBorder(BorderFactory.createLineBorder(borderColor, 3));
+        menuButton.setFocusPainted(false);
+        add(menuButton);
 
-    // Botón de Continuar
-    resumeButton = new JButton("CONTINUAR");
-    resumeButton.setBounds(boardWidth/2 - 150, boardHeight/2 - 60, 300, 50);
-    resumeButton.addActionListener(e -> togglePause());
-    resumeButton.setBackground(buttonColor);
-    resumeButton.setForeground(Color.BLACK);
-    resumeButton.setFont(customFontMedium);
-    resumeButton.setBorder(BorderFactory.createLineBorder(borderColor, 3));
-    resumeButton.setFocusPainted(false);
-    add(resumeButton);
+        // Botón de Continuar
+        resumeButton = new JButton("CONTINUAR");
+        resumeButton.setBounds(boardWidth/2 - 150, boardHeight/2 - 60, 300, 50);
+        resumeButton.addActionListener(e -> togglePause());
+        resumeButton.setBackground(buttonColor);
+        resumeButton.setForeground(Color.BLACK);
+        resumeButton.setFont(customFontMedium);
+        resumeButton.setBorder(BorderFactory.createLineBorder(borderColor, 3));
+        resumeButton.setFocusPainted(false);
+        add(resumeButton);
 
-    // Botón de Controles
-    controlsButton = new JButton("CONTROLES");
-    controlsButton.setBounds(boardWidth/2 - 150, boardHeight/2 + 90, 300, 40);
-    controlsButton.setBackground(buttonColor);
-    controlsButton.setForeground(Color.BLACK);
-    controlsButton.setFont(customFontSmall);
-    controlsButton.setBorder(BorderFactory.createLineBorder(borderColor, 2));
-    controlsButton.setFocusPainted(false);
-    controlsButton.addActionListener(e -> showControls());
-    add(controlsButton);
+        // Botón de Controles
+        controlsButton = new JButton("CONTROLES");
+        controlsButton.setBounds(boardWidth/2 - 150, boardHeight/2 + 90, 300, 40);
+        controlsButton.setBackground(buttonColor);
+        controlsButton.setForeground(Color.BLACK);
+        controlsButton.setFont(customFontSmall);
+        controlsButton.setBorder(BorderFactory.createLineBorder(borderColor, 2));
+        controlsButton.setFocusPainted(false);
+        controlsButton.addActionListener(e -> showControls());
+        add(controlsButton);
 
-    // Botón de ¿Cómo se hizo este juego?
-    aboutButton = new JButton("INFO DEL JUEGO");
-    aboutButton.setBounds(boardWidth/2 - 150, boardHeight/2 + 140, 300, 40);
-    aboutButton.setBackground(buttonColor);
-    aboutButton.setForeground(Color.BLACK);
-    aboutButton.setFont(customFontSmall);
-    aboutButton.setBorder(BorderFactory.createLineBorder(borderColor, 2));
-    aboutButton.setFocusPainted(false);
-    aboutButton.addActionListener(e -> showAbout());
-    add(aboutButton);
+        // Botón de ¿Cómo se hizo este juego?
+        aboutButton = new JButton("INFO DEL JUEGO");
+        aboutButton.setBounds(boardWidth/2 - 150, boardHeight/2 + 140, 300, 40);
+        aboutButton.setBackground(buttonColor);
+        aboutButton.setForeground(Color.BLACK);
+        aboutButton.setFont(customFontSmall);
+        aboutButton.setBorder(BorderFactory.createLineBorder(borderColor, 2));
+        aboutButton.setFocusPainted(false);
+        aboutButton.addActionListener(e -> showAbout());
+        add(aboutButton);
 
         // Botón de Salir del Juego
-    exitButton = new JButton("SALIR DEL JUEGO");
-    exitButton.setBounds(boardWidth/2 - 150, boardHeight/2 + 190, 300, 50);
-    exitButton.addActionListener(e -> exitGame());
-    exitButton.setBackground(buttonColor);
-    exitButton.setForeground(Color.BLACK);
-    exitButton.setFont(customFontMedium);
-    exitButton.setBorder(BorderFactory.createLineBorder(borderColor, 3));
-    exitButton.setFocusPainted(false);
-    add(exitButton);
+        exitButton = new JButton("SALIR DEL JUEGO");
+        exitButton.setBounds(boardWidth/2 - 150, boardHeight/2 + 190, 300, 50);
+        exitButton.addActionListener(e -> exitGame());
+        exitButton.setBackground(buttonColor);
+        exitButton.setForeground(Color.BLACK);
+        exitButton.setFont(customFontMedium);
+        exitButton.setBorder(BorderFactory.createLineBorder(borderColor, 3));
+        exitButton.setFocusPainted(false);
+        add(exitButton);
 
-            // Botón 2de Salir del Juego
-    exiteButton = new JButton("SALIR DEL JUEGO");
-    exiteButton.setBounds(boardWidth/2 - 150, boardHeight/2 + 150, 300, 50);
-    exiteButton.addActionListener(e -> exitGame());
-    exiteButton.setBackground(buttonColor);
-    exiteButton.setForeground(Color.BLACK);
-    exiteButton.setFont(customFontMedium);
-    exiteButton.setBorder(BorderFactory.createLineBorder(borderColor, 3));
-    exiteButton.setFocusPainted(false);
-    add(exiteButton);
+        // Botón 2de Salir del Juego
+        exiteButton = new JButton("SALIR DEL JUEGO");
+        exiteButton.setBounds(boardWidth/2 - 150, boardHeight/2 + 150, 300, 50);
+        exiteButton.addActionListener(e -> exitGame());
+        exiteButton.setBackground(buttonColor);
+        exiteButton.setForeground(Color.BLACK);
+        exiteButton.setFont(customFontMedium);
+        exiteButton.setBorder(BorderFactory.createLineBorder(borderColor, 3));
+        exiteButton.setFocusPainted(false);
+        add(exiteButton);
 
-    // Mostramos solo los botones necesarios según el estado
-    showMainMenuButtons(true);
-}
-
+        // Mostramos solo los botones necesarios según el estado
+        showMainMenuButtons(true);
+    }
 
     private void showMainMenuButtons(boolean show) {
         startButton.setVisible(show);
@@ -322,7 +342,6 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         exiteButton.setVisible(!show);
     }
 
-
     private void showGameButtons(boolean show) {
         startButton.setVisible(false);
         exiteButton.setVisible(show);
@@ -331,16 +350,13 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         resumeButton.setVisible(show);
     }
 
-        private void showGameoverButtons(boolean show) {
+    private void showGameoverButtons(boolean show) {
         startButton.setVisible(false);
         exiteButton.setVisible(show);
         restartButton.setVisible(show);
         menuButton.setVisible(show);
         resumeButton.setVisible(!show);
     }
-
-    //HAY QUE COLORCAR EL SHOWGAMEOVERBUTTONS
-    //DEBE APARECER SOLO REINICIAR, SALIR, MENU, NO DEBE IR CONTINUAR
 
     public void loadMap() {
         walls = new HashSet<>();
@@ -522,33 +538,38 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         showGameoverButtons(true);
     }
 
-private void startGame() {
-    loadMap();
-    resetPositions();
-    gameState = GameState.PLAYING;
-    // Ocultamos todos los botones
-    startButton.setVisible(false);
-    exitButton.setVisible(false);
-    exiteButton.setVisible(false);
-    restartButton.setVisible(false);
-    menuButton.setVisible(false);
-    resumeButton.setVisible(false);
-    controlsButton.setVisible(false); 
-    aboutButton.setVisible(false);    
+    private void startGame() {
+        loadMap();
+        resetPositions();
+        gameState = GameState.PLAYING;
+        // Ocultamos todos los botones
+        startButton.setVisible(false);
+        exitButton.setVisible(false);
+        exiteButton.setVisible(false);
+        restartButton.setVisible(false);
+        menuButton.setVisible(false);
+        resumeButton.setVisible(false);
+        controlsButton.setVisible(false); 
+        aboutButton.setVisible(false);    
 
-    // Reiniciamos valores del juego
-    score = 0;
-    lives = 3;
-    showPacman = true;
-    // Iniciamos el juego
-    gameLoop.start();
-    requestFocus();
-}
+        // Reiniciamos valores del juego
+        score = 0;
+        lives = 3;
+        showPacman = true;
+        
+        // Iniciamos el juego
+        gameLoop.start();
+        requestFocus();
+        
+        // Iniciar sonido de movimiento
+        startMoveSound();
+    }
 
     private void showMainMenu() {
         gameState = GameState.MAIN_MENU;
         gameLoop.stop();
         showMainMenuButtons(true);
+        stopAllSounds(); // Detener todos los sonidos al volver al menú
         repaint();
     }
 
@@ -646,6 +667,11 @@ private void startGame() {
         showPacman = false;
         gameState = GameState.PLAYER_DIED;
         gameLoop.stop();
+        
+        // Detener sonido de movimiento y reproducir sonido de muerte
+        stopAllSounds();
+        playSound("./die.wav", false);
+        
         deathTimer.start();
         repaint();
     }
@@ -653,6 +679,7 @@ private void startGame() {
     private void gameOver() {
         gameState = GameState.GAME_OVER;
         gameLoop.stop();
+        stopAllSounds(); // Detener todos los sonidos al terminar el juego
         showGameoverButtons(true);
         repaint();
     }
@@ -661,10 +688,12 @@ private void startGame() {
         if (gameState == GameState.PLAYING) {
             gameState = GameState.PAUSED;
             gameLoop.stop();
+            stopMoveSound(); // Detener sonido de movimiento al pausar
             showGameButtons(true);
         } else if (gameState == GameState.PAUSED) {
             gameState = GameState.PLAYING;
             gameLoop.start();
+            startMoveSound(); // Reanudar sonido de movimiento al continuar
             showGameButtons(false);
             requestFocus();
         }
@@ -672,6 +701,7 @@ private void startGame() {
     }
 
     private void exitGame() {
+        stopAllSounds(); // Detener todos los sonidos al salir
         Window window = SwingUtilities.getWindowAncestor(this);
         if (window != null) {
             window.dispose();
@@ -721,44 +751,79 @@ private void startGame() {
         showPacman = true;
         gameLoop.start();
         requestFocus();
+        
+        // Reiniciar sonido de movimiento
+        startMoveSound();
     }
 
     private void showControls() {
-    String message = """
-        CONTROLES DEL JUEGO:
+        String message = """
+            CONTROLES DEL JUEGO:
 
-        - FLECHAS o teclas AWSD para mover a Pac-Man
-        - P: Pausar / Reanudar
-        - ESC: Ir al menu principal desde pausa
+            - FLECHAS o teclas AWSD para mover a Pac-Man
+            - P: Pausar / Reanudar
+            - ESC: Ir al menu principal desde pausa
 
-        Objetivo:
-        - Come todos los puntos
-        - Evita los fantasmas
-        - Diviertete !!!
-        """;
-    JOptionPane.showMessageDialog(this, message, "Controles", JOptionPane.INFORMATION_MESSAGE);
-}
+            Objetivo:
+            - Come todos los puntos
+            - Evita los fantasmas
+            - Diviertete !!!
+            """;
+        JOptionPane.showMessageDialog(this, message, "Controles", JOptionPane.INFORMATION_MESSAGE);
+    }
 
-private void showAbout() {
-    String message = """
-        Programacion del juego:
+    private void showAbout() {
+        String message = """
+            Programacion del juego:
 
-        - Lenguaje: Java
-        - Librerias: Swing y AWT
-        - Programado por: Erika Villasmil
-        - Recursos:
-          * Imagenes: sprites de Pac-Man y fantasmas
-          * Fuente personalizada: PAC-FONT.TTF
-        - Logica implementada desde cero:
-          * Movimiento de Pac-Man y enemigos
-          * Colisiones con muros, comida, enemigos
-          * Estados de juego: Menu, Pausa, Game Over
+            - Lenguaje: Java
+            - Librerias: Swing y AWT
+            - Programado por: Erika Villasmil
+            - Recursos:
+              * Imagenes: sprites de Pac-Man y fantasmas
+              * Fuente personalizada: PAC-FONT.TTF
+            - Logica implementada desde cero:
+              * Movimiento de Pac-Man y enemigos
+              * Colisiones con muros, comida, enemigos
+              * Estados de juego: Menu, Pausa, Game Over
 
-        Gracias por jugar PAC-MAN ERIKIKI !!!
-        """;
-    JOptionPane.showMessageDialog(this, message, "Acerca del Juego", JOptionPane.INFORMATION_MESSAGE);
-}
+            Gracias por jugar PAC-MAN ERIKIKI !!!
+            """;
+        JOptionPane.showMessageDialog(this, message, "Acerca del Juego", JOptionPane.INFORMATION_MESSAGE);
+    }
 
+    // Métodos para manejo de sonidos
+    private void startMoveSound() {
+        if (gameState == GameState.PLAYING) {
+            stopAllSounds();
+            moveSound.playSound("./move.wav", true); // Reproducir en bucle
+            currentSound = moveSound;
+        }
+    }
+
+    private void stopMoveSound() {
+        if (currentSound == moveSound) {
+            moveSound.stop();
+            currentSound = null;
+        }
+    }
+
+    private void playSound(String path, boolean loop) {
+        stopAllSounds();
+        if (loop) {
+            moveSound.playSound(path, true);
+            currentSound = moveSound;
+        } else {
+            dieSound.playSound(path, false);
+            currentSound = dieSound;
+        }
+    }
+
+    private void stopAllSounds() {
+        moveSound.stop();
+        dieSound.stop();
+        currentSound = null;
+    }
 
     @Override
     public void actionPerformed(ActionEvent e) {
@@ -828,7 +893,6 @@ private void showAbout() {
     @Override
     public void keyReleased(KeyEvent e) {}
 
-    
     public static void main(String[] args) {
         JFrame frame = new JFrame("PAC-MAN ERIKIKI");
         
@@ -851,6 +915,40 @@ private void showAbout() {
         // Enfocar el juego para que reciba eventos de teclado
         game.requestFocus();
         frame.setIconImage(new ImageIcon(PacMan.class.getResource("icon.png")).getImage());
+    }
+}
 
+class SoundManager {
+    private Clip clip;
+    private boolean isLooping = false;
+
+    public void playSound(String path, boolean loop) {
+        stop();
+        isLooping = loop;
+        
+        try {
+            AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(getClass().getResource(path));
+            clip = AudioSystem.getClip();
+            clip.open(audioInputStream);
+            
+            if (loop) {
+                clip.loop(Clip.LOOP_CONTINUOUSLY);
+            } else {
+                clip.start();
+            }
+        } catch (Exception e) {
+            System.err.println("Error al reproducir sonido: " + e.getMessage());
+        }
+    }
+
+    public void stop() {
+        if (clip != null && clip.isRunning()) {
+            clip.stop();
+            clip.close();
+        }
+    }
+
+    public boolean isPlaying() {
+        return clip != null && clip.isRunning();
     }
 }
