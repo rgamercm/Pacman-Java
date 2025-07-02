@@ -133,6 +133,13 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     private JButton menuButton;
     private JButton resumeButton;
     private JButton exitButton;
+    private JButton exiteButton;
+    private JButton controlsButton;
+    private JButton aboutButton;
+    private JButton controlsButtons;
+    private JButton aboutButtons;
+
+
     
     // Fuentes personalizadas
     private Font customFontLarge;
@@ -208,79 +215,117 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     }
 
     private void setupButtons() {
-        Color buttonColor = new Color(255, 255, 0);
-        Color borderColor = new Color(33, 33, 222);
-        
-        // Botón de Iniciar Juego (para el menú principal)
-        startButton = new JButton("INICIAR JUEGO");
-        startButton.setBounds(boardWidth/2 - 150, boardHeight/2 + 90, 300, 50);
-        startButton.addActionListener(e -> startGame());
-        startButton.setBackground(buttonColor);
-        startButton.setForeground(Color.BLACK);
-        startButton.setFont(customFontMedium);
-        startButton.setBorder(BorderFactory.createLineBorder(borderColor, 3));
-        startButton.setFocusPainted(false);
-        add(startButton);
+    Color buttonColor = new Color(255, 255, 0);
+    Color borderColor = new Color(33, 33, 222);
 
-        // Botón de Reiniciar Nivel
-        restartButton = new JButton("REINICIAR NIVEL");
-        restartButton.setBounds(boardWidth/2 - 150, boardHeight/2 + 10, 300, 50);
-        restartButton.addActionListener(e -> restartLevel());
-        restartButton.setBackground(buttonColor);
-        restartButton.setForeground(Color.BLACK);
-        restartButton.setFont(customFontMedium);
-        restartButton.setBorder(BorderFactory.createLineBorder(borderColor, 3));
-        restartButton.setFocusPainted(false);
-        add(restartButton);
+    // Botón de Iniciar Juego (para el menú principal)
+    startButton = new JButton("INICIAR JUEGO");
+    startButton.setBounds(boardWidth/2 - 150, boardHeight/2 + 30, 300, 50);
+    startButton.addActionListener(e -> startGame());
+    startButton.setBackground(buttonColor);
+    startButton.setForeground(Color.BLACK);
+    startButton.setFont(customFontMedium);
+    startButton.setBorder(BorderFactory.createLineBorder(borderColor, 3));
+    startButton.setFocusPainted(false);
+    add(startButton);
 
-        // Botón de Menú Principal
-        menuButton = new JButton("MENU PRINCIPAL");
-        menuButton.setBounds(boardWidth/2 - 150, boardHeight/2 + 80, 300, 50);
-        menuButton.addActionListener(e -> showMainMenu());
-        menuButton.setBackground(buttonColor);
-        menuButton.setForeground(Color.BLACK);
-        menuButton.setFont(customFontMedium);
-        menuButton.setBorder(BorderFactory.createLineBorder(borderColor, 3));
-        menuButton.setFocusPainted(false);
-        add(menuButton);
-        
-        // Botón de Continuar
-        resumeButton = new JButton("CONTINUAR");
-        resumeButton.setBounds(boardWidth/2 - 150, boardHeight/2 - 60, 300, 50);
-        resumeButton.addActionListener(e -> togglePause());
-        resumeButton.setBackground(buttonColor);
-        resumeButton.setForeground(Color.BLACK);
-        resumeButton.setFont(customFontMedium);
-        resumeButton.setBorder(BorderFactory.createLineBorder(borderColor, 3));
-        resumeButton.setFocusPainted(false);
-        add(resumeButton);
-        
+    // Botón de Reiniciar Nivel
+    restartButton = new JButton("REINICIAR NIVEL");
+    restartButton.setBounds(boardWidth/2 - 150, boardHeight/2 + 10, 300, 50);
+    restartButton.addActionListener(e -> restartLevel());
+    restartButton.setBackground(buttonColor);
+    restartButton.setForeground(Color.BLACK);
+    restartButton.setFont(customFontMedium);
+    restartButton.setBorder(BorderFactory.createLineBorder(borderColor, 3));
+    restartButton.setFocusPainted(false);
+    add(restartButton);
+
+    // Botón de Menú Principal
+    menuButton = new JButton("MENU PRINCIPAL");
+    menuButton.setBounds(boardWidth/2 - 150, boardHeight/2 + 80, 300, 50);
+    menuButton.addActionListener(e -> showMainMenu());
+    menuButton.setBackground(buttonColor);
+    menuButton.setForeground(Color.BLACK);
+    menuButton.setFont(customFontMedium);
+    menuButton.setBorder(BorderFactory.createLineBorder(borderColor, 3));
+    menuButton.setFocusPainted(false);
+    add(menuButton);
+
+    // Botón de Continuar
+    resumeButton = new JButton("CONTINUAR");
+    resumeButton.setBounds(boardWidth/2 - 150, boardHeight/2 - 60, 300, 50);
+    resumeButton.addActionListener(e -> togglePause());
+    resumeButton.setBackground(buttonColor);
+    resumeButton.setForeground(Color.BLACK);
+    resumeButton.setFont(customFontMedium);
+    resumeButton.setBorder(BorderFactory.createLineBorder(borderColor, 3));
+    resumeButton.setFocusPainted(false);
+    add(resumeButton);
+
+    // Botón de Controles
+    controlsButton = new JButton("CONTROLES");
+    controlsButton.setBounds(boardWidth/2 - 150, boardHeight/2 + 90, 300, 40);
+    controlsButton.setBackground(buttonColor);
+    controlsButton.setForeground(Color.BLACK);
+    controlsButton.setFont(customFontSmall);
+    controlsButton.setBorder(BorderFactory.createLineBorder(borderColor, 2));
+    controlsButton.setFocusPainted(false);
+    controlsButton.addActionListener(e -> showControls());
+    add(controlsButton);
+
+    // Botón de ¿Cómo se hizo este juego?
+    aboutButton = new JButton("INFO DEL JUEGO");
+    aboutButton.setBounds(boardWidth/2 - 150, boardHeight/2 + 140, 300, 40);
+    aboutButton.setBackground(buttonColor);
+    aboutButton.setForeground(Color.BLACK);
+    aboutButton.setFont(customFontSmall);
+    aboutButton.setBorder(BorderFactory.createLineBorder(borderColor, 2));
+    aboutButton.setFocusPainted(false);
+    aboutButton.addActionListener(e -> showAbout());
+    add(aboutButton);
+
         // Botón de Salir del Juego
-        exitButton = new JButton("SALIR DEL JUEGO");
-        exitButton.setBounds(boardWidth/2 - 150, boardHeight/2 + 150, 300, 50);
-        exitButton.addActionListener(e -> exitGame());
-        exitButton.setBackground(buttonColor);
-        exitButton.setForeground(Color.BLACK);
-        exitButton.setFont(customFontMedium);
-        exitButton.setBorder(BorderFactory.createLineBorder(borderColor, 3));
-        exitButton.setFocusPainted(false);
-        add(exitButton);
-        
-        // Mostramos solo los botones necesarios según el estado
-        showMainMenuButtons(true);
-    }
+    exitButton = new JButton("SALIR DEL JUEGO");
+    exitButton.setBounds(boardWidth/2 - 150, boardHeight/2 + 190, 300, 50);
+    exitButton.addActionListener(e -> exitGame());
+    exitButton.setBackground(buttonColor);
+    exitButton.setForeground(Color.BLACK);
+    exitButton.setFont(customFontMedium);
+    exitButton.setBorder(BorderFactory.createLineBorder(borderColor, 3));
+    exitButton.setFocusPainted(false);
+    add(exitButton);
+
+            // Botón 2de Salir del Juego
+    exiteButton = new JButton("SALIR DEL JUEGO");
+    exiteButton.setBounds(boardWidth/2 - 150, boardHeight/2 + 150, 300, 50);
+    exiteButton.addActionListener(e -> exitGame());
+    exiteButton.setBackground(buttonColor);
+    exiteButton.setForeground(Color.BLACK);
+    exiteButton.setFont(customFontMedium);
+    exiteButton.setBorder(BorderFactory.createLineBorder(borderColor, 3));
+    exiteButton.setFocusPainted(false);
+    add(exiteButton);
+
+    // Mostramos solo los botones necesarios según el estado
+    showMainMenuButtons(true);
+}
+
 
     private void showMainMenuButtons(boolean show) {
         startButton.setVisible(show);
-        exitButton.setVisible(show);
         restartButton.setVisible(!show);
         menuButton.setVisible(!show);
         resumeButton.setVisible(false);
+        controlsButton.setVisible(show);
+        aboutButton.setVisible(show);
+        exitButton.setVisible(show);
+        exiteButton.setVisible(!show);
     }
+
 
     private void showGameButtons(boolean show) {
         startButton.setVisible(false);
-        exitButton.setVisible(show);
+        exiteButton.setVisible(show);
         restartButton.setVisible(show);
         menuButton.setVisible(show);
         resumeButton.setVisible(show);
@@ -288,7 +333,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
 
         private void showGameoverButtons(boolean show) {
         startButton.setVisible(false);
-        exitButton.setVisible(show);
+        exiteButton.setVisible(show);
         restartButton.setVisible(show);
         menuButton.setVisible(show);
         resumeButton.setVisible(!show);
@@ -484,9 +529,13 @@ private void startGame() {
     // Ocultamos todos los botones
     startButton.setVisible(false);
     exitButton.setVisible(false);
+    exiteButton.setVisible(false);
     restartButton.setVisible(false);
     menuButton.setVisible(false);
     resumeButton.setVisible(false);
+    controlsButton.setVisible(false); 
+    aboutButton.setVisible(false);    
+
     // Reiniciamos valores del juego
     score = 0;
     lives = 3;
@@ -674,6 +723,43 @@ private void startGame() {
         requestFocus();
     }
 
+    private void showControls() {
+    String message = """
+        CONTROLES DEL JUEGO:
+
+        - FLECHAS o teclas AWSD para mover a Pac-Man
+        - P: Pausar / Reanudar
+        - ESC: Ir al menu principal desde pausa
+
+        Objetivo:
+        - Come todos los puntos
+        - Evita los fantasmas
+        - Diviertete !!!
+        """;
+    JOptionPane.showMessageDialog(this, message, "Controles", JOptionPane.INFORMATION_MESSAGE);
+}
+
+private void showAbout() {
+    String message = """
+        Programacion del juego:
+
+        - Lenguaje: Java
+        - Librerias: Swing y AWT
+        - Programado por: Erika Villasmil
+        - Recursos:
+          * Imagenes: sprites de Pac-Man y fantasmas
+          * Fuente personalizada: PAC-FONT.TTF
+        - Logica implementada desde cero:
+          * Movimiento de Pac-Man y enemigos
+          * Colisiones con muros, comida, enemigos
+          * Estados de juego: Menu, Pausa, Game Over
+
+        Gracias por jugar PAC-MAN ERIKIKI !!!
+        """;
+    JOptionPane.showMessageDialog(this, message, "Acerca del Juego", JOptionPane.INFORMATION_MESSAGE);
+}
+
+
     @Override
     public void actionPerformed(ActionEvent e) {
         if (gameState == GameState.PLAYING) {
@@ -742,6 +828,7 @@ private void startGame() {
     @Override
     public void keyReleased(KeyEvent e) {}
 
+    
     public static void main(String[] args) {
         JFrame frame = new JFrame("PAC-MAN ERIKIKI");
         
@@ -763,5 +850,7 @@ private void startGame() {
         
         // Enfocar el juego para que reciba eventos de teclado
         game.requestFocus();
+        frame.setIconImage(new ImageIcon(PacMan.class.getResource("icon.png")).getImage());
+
     }
 }
