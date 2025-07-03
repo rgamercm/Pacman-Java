@@ -4,6 +4,8 @@ import java.awt.image.BufferedImage;
 import java.io.InputStream;
 import java.util.HashSet;
 import java.util.Random;
+import java.util.ArrayList;
+import java.util.List;
 import javax.swing.*;
 import javax.sound.sampled.*;
 import java.io.File;
@@ -35,6 +37,12 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         char nextDirection = 'R';
         int velocityX = 4;
         int velocityY = 0;
+        
+        // Nuevos campos para el comportamiento mejorado de fantasmas
+        int movementStrategy; // 0-2
+        long lastDirectionChange;
+        int changeInterval;
+        int velocity = 4;
 
         Block(Image image, int x, int y, int width, int height) {
             this.image = image;
@@ -44,24 +52,29 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             this.height = height;
             this.startX = x;
             this.startY = y;
+            
+            // Inicialización de nuevos campos
+            this.movementStrategy = random.nextInt(3);
+            this.lastDirectionChange = System.currentTimeMillis();
+            this.changeInterval = 1000 + random.nextInt(2000);
         }
 
         void updateVelocity() {
             switch (direction) {
                 case 'U':
                     velocityX = 0;
-                    velocityY = -4;
+                    velocityY = -velocity;
                     break;
                 case 'D':
                     velocityX = 0;
-                    velocityY = 4;
+                    velocityY = velocity;
                     break;
                 case 'L':
-                    velocityX = -4;
+                    velocityX = -velocity;
                     velocityY = 0;
                     break;
                 case 'R':
-                    velocityX = 4;
+                    velocityX = velocity;
                     velocityY = 0;
                     break;
             }
@@ -72,6 +85,9 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             this.y = this.startY;
             this.direction = 'R';
             this.nextDirection = 'R';
+            this.movementStrategy = random.nextInt(3);
+            this.lastDirectionChange = System.currentTimeMillis();
+            this.changeInterval = 1000 + random.nextInt(2000);
             updateVelocity();
         }
     }
@@ -357,76 +373,76 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         repaint();
     }
 
-private void showColorOptions() {
-    JFrame colorFrame = new JFrame("Selecciona el color de tu Pac-Man");
-    colorFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-    
-    // Configuración del tamaño y layout
-    colorFrame.setSize(650, 400); // Tamaño un poco más grande
-    colorFrame.setLayout(new GridLayout(2, 4, 15, 15));
-    
-    // Centrado preciso en la pantalla
-    Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-    int x = (screenSize.width - colorFrame.getWidth()) / 2;
-    int y = (screenSize.height - colorFrame.getHeight()) / 2;
-    colorFrame.setLocation(x, y);
-
-    String[] colors = {"amarillo", "azul", "negro", "celeste", "rojo", "rosa", "verde"};
-    Color[] colorValues = {Color.YELLOW, Color.BLUE, Color.BLACK, Color.CYAN, Color.RED, Color.PINK, Color.GREEN};
-
-    // Fuente mejorada para los botones
-    Font colorButtonFont = new Font("Arial", Font.BOLD, 14);
-
-    for (int i = 0; i < colors.length; i++) {
-        JButton colorButton = new JButton(colors[i].toUpperCase()) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                // Fondo del botón
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setColor(getBackground());
-                g2.fillRect(0, 0, getWidth(), getHeight());
-                
-                // Fondo blanco para el texto
-                g2.setColor(Color.WHITE);
-                FontMetrics fm = g2.getFontMetrics();
-                String text = getText();
-                int textWidth = fm.stringWidth(text);
-                int textHeight = fm.getHeight();
-                int padding = 8;
-                
-                // Rectángulo blanco con bordes redondeados
-                int arc = 15; // Radio para bordes redondeados
-                g2.fillRoundRect((getWidth() - textWidth)/2 - padding, 
-                               (getHeight() - textHeight)/2 - padding/2,
-                               textWidth + padding*2, 
-                               textHeight + padding, 
-                               arc, arc);
-                
-                // Texto
-                g2.setColor(Color.BLACK);
-                g2.drawString(text, (getWidth() - textWidth)/2, 
-                            (getHeight() - fm.getHeight())/2 + fm.getAscent());
-                g2.dispose();
-            }
-        };
+    private void showColorOptions() {
+        JFrame colorFrame = new JFrame("Selecciona el color de tu Pac-Man");
+        colorFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         
-        colorButton.setBackground(colorValues[i]);
-        colorButton.setFont(colorButtonFont);
-        colorButton.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-        colorButton.setFocusPainted(false);
-        colorButton.addActionListener(e -> {
-            loadImages(colors[getIndex(colorButton.getText().toLowerCase(), colors)]);
-            colorFrame.dispose();
-            startGameAfterColorSelection();
-        });
+        // Configuración del tamaño y layout
+        colorFrame.setSize(650, 400); // Tamaño un poco más grande
+        colorFrame.setLayout(new GridLayout(2, 4, 15, 15));
         
-        colorFrame.add(colorButton);
+        // Centrado preciso en la pantalla
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        int x = (screenSize.width - colorFrame.getWidth()) / 2;
+        int y = (screenSize.height - colorFrame.getHeight()) / 2;
+        colorFrame.setLocation(x, y);
+
+        String[] colors = {"amarillo", "azul", "negro", "celeste", "rojo", "rosa", "verde"};
+        Color[] colorValues = {Color.YELLOW, Color.BLUE, Color.BLACK, Color.CYAN, Color.RED, Color.PINK, Color.GREEN};
+
+        // Fuente mejorada para los botones
+        Font colorButtonFont = new Font("Arial", Font.BOLD, 14);
+
+        for (int i = 0; i < colors.length; i++) {
+            JButton colorButton = new JButton(colors[i].toUpperCase()) {
+                @Override
+                protected void paintComponent(Graphics g) {
+                    // Fondo del botón
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setColor(getBackground());
+                    g2.fillRect(0, 0, getWidth(), getHeight());
+                    
+                    // Fondo blanco para el texto
+                    g2.setColor(Color.WHITE);
+                    FontMetrics fm = g2.getFontMetrics();
+                    String text = getText();
+                    int textWidth = fm.stringWidth(text);
+                    int textHeight = fm.getHeight();
+                    int padding = 8;
+                    
+                    // Rectángulo blanco con bordes redondeados
+                    int arc = 15; // Radio para bordes redondeados
+                    g2.fillRoundRect((getWidth() - textWidth)/2 - padding, 
+                                   (getHeight() - textHeight)/2 - padding/2,
+                                   textWidth + padding*2, 
+                                   textHeight + padding, 
+                                   arc, arc);
+                    
+                    // Texto
+                    g2.setColor(Color.BLACK);
+                    g2.drawString(text, (getWidth() - textWidth)/2, 
+                                (getHeight() - fm.getHeight())/2 + fm.getAscent());
+                    g2.dispose();
+                }
+            };
+            
+            colorButton.setBackground(colorValues[i]);
+            colorButton.setFont(colorButtonFont);
+            colorButton.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+            colorButton.setFocusPainted(false);
+            colorButton.addActionListener(e -> {
+                loadImages(colors[getIndex(colorButton.getText().toLowerCase(), colors)]);
+                colorFrame.dispose();
+                startGameAfterColorSelection();
+            });
+            
+            colorFrame.add(colorButton);
+        }
+
+        // Hacer la ventana modal (bloquea la ventana principal)
+        colorFrame.setResizable(false);
+        colorFrame.setVisible(true);
     }
-
-    // Hacer la ventana modal (bloquea la ventana principal)
-    colorFrame.setResizable(false);
-    colorFrame.setVisible(true);
-}
 
     private int getIndex(String text, String[] array) {
         for (int i = 0; i < array.length; i++) {
@@ -545,24 +561,123 @@ private void showColorOptions() {
     }
 
     private void moveGhosts() {
+        long currentTime = System.currentTimeMillis();
+        
         for (Block ghost : ghosts) {
+            // Guardar posición anterior
             int oldX = ghost.x;
             int oldY = ghost.y;
             
+            // Mover al fantasma según su velocidad actual
             ghost.x += ghost.velocityX;
             ghost.y += ghost.velocityY;
             
-            if (checkWallCollision(ghost) || ghost.x <= 0 || ghost.x + ghost.width >= boardWidth) {
+            // Verificar colisiones con paredes o bordes
+            boolean collided = checkWallCollision(ghost) || 
+                             ghost.x <= 0 || 
+                             ghost.x + ghost.width >= boardWidth;
+            
+            if (collided) {
+                // Revertir movimiento
                 ghost.x = oldX;
                 ghost.y = oldY;
-                ghost.direction = directions[random.nextInt(4)];
+                
+                // Elegir nueva dirección basada en la personalidad del fantasma
+                char newDirection = chooseNewDirection(ghost, oldX, oldY);
+                ghost.direction = newDirection;
                 ghost.updateVelocity();
             }
             
+            // Cambio de dirección periódico (sin necesidad de colisión)
+            if (currentTime - ghost.lastDirectionChange > ghost.changeInterval) {
+                ghost.direction = chooseNewDirection(ghost, ghost.x, ghost.y);
+                ghost.updateVelocity();
+                ghost.lastDirectionChange = currentTime;
+                ghost.changeInterval = 1000 + random.nextInt(2000); // 1-3 segundos
+            }
+            
+            // Verificar colisión con Pac-Man
             if (collision(ghost, pacman) && gameState == GameState.PLAYING) {
                 playerDied();
             }
         }
+    }
+
+    private char chooseNewDirection(Block ghost, int currentX, int currentY) {
+        // Obtener direcciones posibles (sin causar colisión inmediata)
+        List<Character> possibleDirections = new ArrayList<>();
+        
+        // Verificar cada dirección posible
+        for (char dir : new char[]{'U', 'D', 'L', 'R'}) {
+            Block temp = new Block(null, currentX, currentY, ghost.width, ghost.height);
+            temp.direction = dir;
+            temp.updateVelocity();
+            temp.x += temp.velocityX;
+            temp.y += temp.velocityY;
+            
+            if (!checkWallCollision(temp) && 
+                temp.x > 0 && 
+                temp.x + temp.width < boardWidth) {
+                possibleDirections.add(dir);
+            }
+        }
+        
+        // Si no hay direcciones posibles (raro caso), usar aleatorio
+        if (possibleDirections.isEmpty()) {
+            return directions[random.nextInt(4)];
+        }
+        
+        // Basar la decisión en la personalidad del fantasma
+        switch (ghost.movementStrategy) {
+            case 0: // Perseguidor agresivo
+                if (random.nextDouble() < 0.7) { // 70% de perseguir
+                    return chasePacMan(ghost, currentX, currentY, possibleDirections);
+                }
+                break;
+                
+            case 1: // Explorador
+                if (random.nextDouble() < 0.3) { // 30% de perseguir
+                    return chasePacMan(ghost, currentX, currentY, possibleDirections);
+                }
+                break;
+                
+            case 2: // Aleatorio con preferencia por dirección actual
+                if (random.nextDouble() < 0.5 && possibleDirections.contains(ghost.direction)) {
+                    return ghost.direction; // 50% de mantener dirección
+                }
+                break;
+        }
+        
+        // Dirección aleatoria entre las posibles
+        return possibleDirections.get(random.nextInt(possibleDirections.size()));
+    }
+
+    private char chasePacMan(Block ghost, int currentX, int currentY, List<Character> possibleDirections) {
+        // Calcular diferencias con posición de Pac-Man
+        int dx = pacman.x - currentX;
+        int dy = pacman.y - currentY;
+        
+        // Determinar mejores direcciones para perseguir
+        char preferredHorizontal = dx > 0 ? 'R' : 'L';
+        char preferredVertical = dy > 0 ? 'D' : 'U';
+        
+        // Priorizar la dirección con mayor diferencia
+        if (Math.abs(dx) > Math.abs(dy)) {
+            if (possibleDirections.contains(preferredHorizontal)) {
+                return preferredHorizontal;
+            } else if (possibleDirections.contains(preferredVertical)) {
+                return preferredVertical;
+            }
+        } else {
+            if (possibleDirections.contains(preferredVertical)) {
+                return preferredVertical;
+            } else if (possibleDirections.contains(preferredHorizontal)) {
+                return preferredHorizontal;
+            }
+        }
+        
+        // Si no puede perseguir directamente, elegir aleatoria
+        return possibleDirections.get(random.nextInt(possibleDirections.size()));
     }
 
     private void playerDied() {
